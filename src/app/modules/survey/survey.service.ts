@@ -6,6 +6,7 @@ import { SurveyResponse } from "./survey.model";
 import { AppError } from "../../utils/app_error";
 import { organizationModel } from "../organization/organization.model";
 import { Types } from "mongoose";
+import { streamLocationMapping } from "./streamLocationMapping";
 
 const DASHBOARD_DOMAINS = [
   "Clinical Risk Index",
@@ -47,6 +48,17 @@ const riskFractionFromScore = (score: number) => {
 
 const startSurvey = async (payload: TUser) => {
   // console.log({ payload });
+  const availableDepartments =
+    streamLocationMapping[payload.stream]?.[payload.location]?.[
+      payload.function
+    ] || [];
+
+  if (!availableDepartments.includes(payload.department)) {
+    throw new AppError(
+      "Invalid stream/location/function/department combination",
+      httpStatus.BAD_REQUEST
+    );
+  }
 
   const isOrganizationExist = await organizationModel.findById(
     payload.organizationId
