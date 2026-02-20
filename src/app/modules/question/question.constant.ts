@@ -1,0 +1,1 @@
+export const QUESTION_SEARCHABLE_FIELDS = [];

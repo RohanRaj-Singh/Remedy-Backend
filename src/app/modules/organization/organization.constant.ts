@@ -1,0 +1,1 @@
+export const ORGANIZATION_SEARCHABLE_FIELDS = [];
