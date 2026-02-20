@@ -17,10 +17,10 @@ export const streamLocationMapping: StreamLocationMapping = {
                                                               "Exploration_Study_Or_Growth_Team"
                                                           ],
                                           "Joint_Ventures":  [
-                                                                 "Joint_Ventuers_Integrated_Gas",
+                                                                 "Joint_Ventures_Integrated_Gas",
                                                                  "Joint_Ventures",
                                                                  "Joint_Ventures_Business",
-                                                                 "Joint_Ventures_Technical_Soultion"
+                                                                 "Joint_Ventures_Technical_Solution"
                                                              ]
                                       }
                    },
@@ -149,3 +149,4 @@ export const streamLocationMapping: StreamLocationMapping = {
                                                         }
                                       }
 };
+
