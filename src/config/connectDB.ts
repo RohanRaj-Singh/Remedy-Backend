@@ -3,12 +3,24 @@ import mongoose from "mongoose";
 const DEFAULT_SERVER_SELECTION_TIMEOUT_MS = 15_000;
 const DEFAULT_SOCKET_TIMEOUT_MS = 45_000;
 
-export async function connectDB(): Promise<void> {
+interface ConnectDBOptions {
+  exitOnFailure?: boolean;
+}
+
+export async function connectDB(options: ConnectDBOptions = {}): Promise<void> {
+  const { exitOnFailure = true } = options;
   const uri = process.env.DB_URL;
 
   if (!uri) {
     console.error("[MongoDB] DB_URL is not set in environment variables.");
-    process.exit(1);
+    if (exitOnFailure) process.exit(1);
+    throw new Error("DB_URL is not set in environment variables.");
+  }
+
+  const readyState = mongoose.connection.readyState;
+  // 1 = connected, 2 = connecting
+  if (readyState === 1 || readyState === 2) {
+    return;
   }
 
   try {
@@ -40,6 +52,7 @@ export async function connectDB(): Promise<void> {
     });
   } catch (error) {
     console.error("[MongoDB] Connection failed:", error);
-    process.exit(1);
+    if (exitOnFailure) process.exit(1);
+    throw error;
   }
 }
