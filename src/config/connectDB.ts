@@ -27,9 +27,19 @@ export async function connectDB(): Promise<void> {
     });
 
     console.log("[MongoDB] Connected successfully.");
+
+    const conn = mongoose.connection;
+    conn.on("error", (err) => {
+      console.error("[MongoDB] Connection error:", err);
+    });
+    conn.on("disconnected", () => {
+      console.warn("[MongoDB] Disconnected.");
+    });
+    conn.on("reconnected", () => {
+      console.log("[MongoDB] Reconnected.");
+    });
   } catch (error) {
     console.error("[MongoDB] Connection failed:", error);
     process.exit(1);
   }
 }
-

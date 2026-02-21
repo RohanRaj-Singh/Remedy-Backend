@@ -34,14 +34,19 @@ app.get("/health", (req: Request, res: Response) => {
   res.status(isDbConnected ? 200 : 503).json({
     success: isDbConnected,
     dbStatus: isDbConnected ? "connected" : "disconnected",
+    readyState: mongoose.connection.readyState,
   });
 });
 
 app.use("/api", (req: Request, res: Response, next) => {
-  if (mongoose.connection.readyState !== 1) {
+  const readyState = mongoose.connection.readyState;
+  // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
+  if (readyState !== 1 && readyState !== 2) {
     return res.status(503).json({
       success: false,
       message: "Database is unavailable. Please try again shortly.",
+      dbStatus: readyState === 0 ? "disconnected" : "disconnecting",
+      readyState,
     });
   }
   next();
