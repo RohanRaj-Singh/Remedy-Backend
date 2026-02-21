@@ -1,38 +1,29 @@
-
-import mongoose from "mongoose";
+import "dotenv/config";
+import http from "http";
 import app from "./app";
-import { configs } from "./app/configs";
-import { createSuperAdmin } from "./app/modules/user/user.service";
+import { connectDB } from "./config/connectDB";
 
-const RETRY_DELAY_MS = 10_000;
-let isConnecting = false;
+const PORT = Number(process.env.PORT) || 5001;
 
-const connectDbWithRetry = async () => {
-  if (isConnecting || mongoose.connection.readyState === 1) return;
-  if (!configs.db_url) {
-    console.error("DB_URL is missing. Database connection skipped.");
-    return;
-  }
+async function bootstrap(): Promise<void> {
+  await connectDB();
 
-  isConnecting = true;
-  try {
-    await mongoose.connect(configs.db_url, { serverSelectionTimeoutMS: 8000 });
-    await createSuperAdmin();
-    console.log("MongoDB connected.");
-  } catch (error) {
-    console.error("MongoDB connection failed. Retrying...", error);
-    setTimeout(connectDbWithRetry, RETRY_DELAY_MS);
-  } finally {
-    isConnecting = false;
-  }
-};
+  const server = http.createServer(app);
 
-const startServer = () => {
-  const port = Number(configs.port || 5001);
-  app.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
+  server.listen(PORT, () => {
+    console.log(`Server listening on port ${PORT}`);
   });
-};
 
-startServer();
-connectDbWithRetry();
+  const shutdown = (signal: string) => {
+    console.log(`${signal} received. Shutting down gracefully...`);
+    server.close(() => {
+      process.exit(0);
+    });
+  };
+
+  process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+}
+
+void bootstrap();
+
