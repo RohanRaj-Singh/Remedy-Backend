@@ -8,20 +8,38 @@ import appRouter from "./routes";
 
 // define app
 const app = express();
+
+const envOrigins = (process.env.CORS_ORIGIN || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const allowedOrigins = new Set<string>([
+  "http://localhost:5173",
+  "http://localhost:5174",
+  "http://localhost:5175",
+  "http://localhost:5176",
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:3002",
+  "https://remedygcc.com",
+  ...envOrigins,
+]);
+
 // middleware
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "http://localhost:5174",
-      "http://localhost:5175",
-      "http://localhost:5176",
-      "http://localhost:3000",
-      "http://localhost:3001",
-      "http://localhost:3002",
-      "https://remedy-sd.vercel.app",
-      "https://remedygcc.com",
-    ],
+    origin: (origin, callback) => {
+      // Allow server-to-server and non-browser requests
+      if (!origin) return callback(null, true);
+
+      const isAllowed =
+        allowedOrigins.has(origin) || /^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/.test(origin);
+
+      if (isAllowed) return callback(null, true);
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
   })
 );
 app.use(express.json({ limit: "100mb" }));
