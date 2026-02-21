@@ -46,6 +46,55 @@ const riskFractionFromScore = (score: number) => {
   return (2 - score) / 4;
 };
 
+const toLegacyLabel = (value: string) => {
+  let out = value.replace(/_/g, " ");
+  out = out.replace(/\bAnd\b/g, "&");
+  out = out.replace(/\bOr\b/g, "/");
+  out = out.replace(/60 & 48/g, "60&48");
+  out = out.replace(/People Technology & Culture/g, "People, Technology & Culture");
+  return out;
+};
+
+const toCanonicalLabel = (value: string) => {
+  return value
+    .trim()
+    .replace(/&/g, " And ")
+    .replace(/\//g, " Or ")
+    .replace(/,/g, " ")
+    .replace(/[^A-Za-z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/ /g, "_");
+};
+
+const locationAliases: Record<string, string[]> = {
+  headOffice: ["Muscat", "muscat", "Head Office", "head office"],
+  block60: ["B60", "b60", "Block 60", "block 60"],
+  msusundam: ["Musandam", "musandam", "Msusundam", "msusundam"],
+};
+
+const getFilterCandidates = (value?: string) => {
+  if (!value) return [];
+  const set = new Set<string>([
+    value,
+    toLegacyLabel(value),
+    toCanonicalLabel(value),
+    value.toLowerCase(),
+    toLegacyLabel(value).toLowerCase(),
+  ]);
+
+  const aliases = locationAliases[value];
+  if (aliases) aliases.forEach((a) => set.add(a));
+
+  return Array.from(set).filter(Boolean);
+};
+
+const buildFieldFilter = (field: string, value?: string) => {
+  const candidates = getFilterCandidates(value);
+  if (!candidates.length) return null;
+  return { [field]: { $in: candidates } };
+};
+
 const startSurvey = async (payload: TUser) => {
   // console.log({ payload });
   const availableDepartments =
@@ -582,27 +631,29 @@ const getOrganizationSurveyStats2 = async (
     andClauses.push({ $or: orClauses });
     andClauses.push({ status: "completed" });
 
-    if (filtersObj.department)
+    if (filtersObj.department) {
+      const candidates = getFilterCandidates(filtersObj.department);
       andClauses.push({
         $or: [
-          { "user.department": filtersObj.department },
-          { "user.unitDepartment": filtersObj.department },
+          { "user.department": { $in: candidates } },
+          { "user.unitDepartment": { $in: candidates } },
         ],
       });
+    }
 
-    if (filtersObj.stream)
-      andClauses.push({ "user.stream": filtersObj.stream });
+    const streamFilter = buildFieldFilter("user.stream", filtersObj.stream);
+    if (streamFilter) andClauses.push(streamFilter);
 
-    if (filtersObj.function)
-      andClauses.push({ "user.function": filtersObj.function });
+    const functionFilter = buildFieldFilter("user.function", filtersObj.function);
+    if (functionFilter) andClauses.push(functionFilter);
 
     if (filtersObj.gender)
       andClauses.push({ "user.gender": filtersObj.gender });
 
     if (filtersObj.age) andClauses.push({ "user.age": filtersObj.age });
 
-    if (filtersObj.location)
-      andClauses.push({ "user.location": filtersObj.location });
+    const locationFilter = buildFieldFilter("user.location", filtersObj.location);
+    if (locationFilter) andClauses.push(locationFilter);
 
     if (filtersObj.seniorityLevel)
       andClauses.push({ "user.seniorityLevel": filtersObj.seniorityLevel });
@@ -1381,12 +1432,12 @@ const getSubdomainSeats2 = async (
 
     if (filt.gender) q["user.gender"] = filt.gender;
     if (filt.age) q["user.age"] = filt.age;
-    if (filt.location) q["user.location"] = filt.location;
+    if (filt.location) q["user.location"] = { $in: getFilterCandidates(filt.location) };
     if (filt.seniorityLevel) q["user.seniorityLevel"] = filt.seniorityLevel;
 
-    if (filt.stream) q["user.stream"] = filt.stream;
-    if (filt.function) q["user.function"] = filt.function;
-    if (filt.department) q["user.department"] = filt.department;
+    if (filt.stream) q["user.stream"] = { $in: getFilterCandidates(filt.stream) };
+    if (filt.function) q["user.function"] = { $in: getFilterCandidates(filt.function) };
+    if (filt.department) q["user.department"] = { $in: getFilterCandidates(filt.department) };
 
     return q;
   };
