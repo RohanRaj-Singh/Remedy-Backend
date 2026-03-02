@@ -1,0 +1,91 @@
+
+> server@1.0.0 dev
+> ts-node-dev --respawn --transpile-only src/server.ts
+
+[INFO] 21:25:26 ts-node-dev ver. 2.0.0 (using ts-node ver. 10.9.2, typescript ver. 5.9.3)
+[MongoDB] Connected successfully.
+Server listening on port 5001
+{
+  _id: new ObjectId('6902c53fce6fa90018b3af08'),
+  name: 'SurveyNova',
+  isDelete: false,
+  createdAt: 2025-10-30T01:54:07.314Z,
+  updatedAt: 2025-10-30T01:54:07.505Z,
+  __v: 0,
+  organizationSurvaysLink: 'https://remedy-sd.vercel.app/organizationDashboard?organizationId=6902c53fce6fa90018b3af08',
+  survayProvideLink: 'https://remedy-sd.vercel.app/survey/?organizationId=6902c53fce6fa90018b3af08'
+}
+{
+  _id: new ObjectId('6902c53fce6fa90018b3af08'),
+  name: 'SurveyNova',
+  isDelete: false,
+  createdAt: 2025-10-30T01:54:07.314Z,
+  updatedAt: 2025-10-30T01:54:07.505Z,
+  __v: 0,
+  organizationSurvaysLink: 'https://remedy-sd.vercel.app/organizationDashboard?organizationId=6902c53fce6fa90018b3af08',
+  survayProvideLink: 'https://remedy-sd.vercel.app/survey/?organizationId=6902c53fce6fa90018b3af08'
+}
+{
+  _id: new ObjectId('6902c53fce6fa90018b3af08'),
+  name: 'SurveyNova',
+  isDelete: false,
+  createdAt: 2025-10-30T01:54:07.314Z,
+  updatedAt: 2025-10-30T01:54:07.505Z,
+  __v: 0,
+  organizationSurvaysLink: 'https://remedy-sd.vercel.app/organizationDashboard?organizationId=6902c53fce6fa90018b3af08',
+  survayProvideLink: 'https://remedy-sd.vercel.app/survey/?organizationId=6902c53fce6fa90018b3af08'
+}
+{
+  _id: new ObjectId('6902bda0c0f78f02d2067668'),
+  name: 'OQEP',
+  isDelete: false,
+  createdAt: 2025-10-30T01:21:36.269Z,
+  updatedAt: 2025-10-30T01:21:36.368Z,
+  __v: 0,
+  organizationSurvaysLink: 'https://remedy-sd.vercel.app/organizationDashboard?organizationId=6902bda0c0f78f02d2067668',
+  survayProvideLink: 'https://remedy-sd.vercel.app/survey/?organizationId=6902bda0c0f78f02d2067668',
+  username: 'OQEP',
+  password: '$2b$12$IO0umE3LETRywtrZrj7kQe.0S7tBlZcYyV4P/4qDJP.KIOnRfdke.'
+}
+true
+{
+  stream: undefined,
+  function: undefined,
+  department: undefined,
+  gender: undefined,
+  age: undefined,
+  location: undefined,
+  seniorityLevel: undefined
+}
+{
+  stream: 'Commercial',
+  function: undefined,
+  department: undefined,
+  gender: undefined,
+  age: undefined,
+  location: undefined,
+  seniorityLevel: undefined
+}
+{
+  stream: undefined,
+  function: undefined,
+  department: undefined,
+  gender: undefined,
+  age: undefined,
+  location: undefined,
+  seniorityLevel: undefined
+}
+{
+  stream: 'Commercial',
+  function: undefined,
+  department: undefined,
+  gender: undefined,
+  age: undefined,
+  location: undefined,
+  seniorityLevel: undefined
+}
+[MongoDB] Reconnected.
+[MongoDB] Disconnected.
+[MongoDB] Reconnected.
+[MongoDB] Reconnected.
+^C^C
