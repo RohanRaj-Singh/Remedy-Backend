@@ -1,29 +1,49 @@
-import "dotenv/config";
-import http from "http";
 import app from "./app";
 import { connectDB } from "./config/connectDB";
+import { getEnv } from "./config/env";
 
-const PORT = Number(process.env.PORT) || 5001;
+const DB_RETRY_DELAY_MS = 5_000;
 
-async function bootstrap(): Promise<void> {
-  await connectDB();
+process.on("uncaughtException", (error) => {
+  console.error("[Process] Uncaught exception:", error);
+});
 
-  const server = http.createServer(app);
+process.on("unhandledRejection", (reason) => {
+  console.error("[Process] Unhandled promise rejection:", reason);
+});
 
-  server.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
-  });
+async function maintainDatabaseConnection(): Promise<void> {
+  try {
+    await connectDB();
+    console.log("DB connected");
+  } catch (error) {
+    console.error(
+      `[Startup] Database connection failed. Retrying in ${DB_RETRY_DELAY_MS / 1000}s...`,
+      error
+    );
 
-  const shutdown = (signal: string) => {
-    console.log(`${signal} received. Shutting down gracefully...`);
-    server.close(() => {
-      process.exit(0);
-    });
-  };
-
-  process.on("SIGINT", () => shutdown("SIGINT"));
-  process.on("SIGTERM", () => shutdown("SIGTERM"));
+    setTimeout(() => {
+      void maintainDatabaseConnection();
+    }, DB_RETRY_DELAY_MS);
+  }
 }
 
-void bootstrap();
+async function bootstrap(): Promise<void> {
+  const { port } = getEnv();
 
+  await new Promise<void>((resolve, reject) => {
+    const server = app.listen(port, () => {
+      console.log(`Server started on port ${port}`);
+      resolve();
+    });
+
+    server.on("error", reject);
+  });
+
+  void maintainDatabaseConnection();
+}
+
+bootstrap().catch((error) => {
+  console.error("[Startup] Failed to start server:", error);
+  process.exit(1);
+});

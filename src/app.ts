@@ -2,7 +2,6 @@ import express, { Request, Response } from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import globalErrorHandler from "./app/middlewares/global_error_handler";
-import notFound from "./app/middlewares/not_found_api";
 import cookieParser from "cookie-parser";
 import appRouter from "./routes";
 
@@ -15,16 +14,26 @@ const envOrigins = (process.env.CORS_ORIGIN || "")
   .filter(Boolean);
 
 const allowedOrigins = new Set<string>([
-  "http://localhost:5173",
-  "http://localhost:5174",
-  "http://localhost:5175",
-  "http://localhost:5176",
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "http://localhost:3002",
   "https://remedygcc.com",
+  "https://www.remedygcc.com",
   ...envOrigins,
 ]);
+
+function isAllowedOrigin(origin: string): boolean {
+  if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin)) {
+    return true;
+  }
+
+  if (/^https:\/\/([a-z0-9-]+\.)*remedygcc\.com$/i.test(origin)) {
+    return true;
+  }
+
+  if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) {
+    return true;
+  }
+
+  return allowedOrigins.has(origin);
+}
 
 // middleware
 app.use(
@@ -33,13 +42,11 @@ app.use(
       // Allow server-to-server and non-browser requests
       if (!origin) return callback(null, true);
 
-      const isAllowed =
-        allowedOrigins.has(origin) || /^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/.test(origin);
-
-      if (isAllowed) return callback(null, true);
+      if (isAllowedOrigin(origin)) return callback(null, true);
 
       return callback(new Error(`CORS blocked for origin: ${origin}`));
     },
+    credentials: true,
   })
 );
 app.use(express.json({ limit: "100mb" }));
@@ -51,8 +58,11 @@ app.get("/health", (req: Request, res: Response) => {
   const isDbConnected = mongoose.connection.readyState === 1;
   res.status(isDbConnected ? 200 : 503).json({
     success: isDbConnected,
+    message: isDbConnected ? "Server healthy" : "Server running without database",
     dbStatus: isDbConnected ? "connected" : "disconnected",
     readyState: mongoose.connection.readyState,
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -73,12 +83,18 @@ app.use("/api", appRouter);
 
 // stating point
 app.get("/", (req: Request, res: Response) => {
-  res.send("Remedy Server Is Runnig...");
+  res.status(200).json({
+    success: true,
+    message: "Server started",
+  });
+});
+
+app.use((_req: Request, res: Response) => {
+  res.status(404).json({ message: "Route not found" });
 });
 
 // global error handler
 app.use(globalErrorHandler);
-app.use(notFound);
 
 // export app
 export default app;
