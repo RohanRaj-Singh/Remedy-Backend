@@ -97,7 +97,19 @@ const toCanonicalAge = (value: string) => {
     "55+": "55+",
   };
 
-  return aliases[normalized] || normalized;
+  if (aliases[normalized]) return aliases[normalized];
+
+  // Handle raw numeric age (e.g. "30") → map to correct range
+  const num = parseInt(normalized, 10);
+  if (!isNaN(num)) {
+    if (num < 25) return "18-24";
+    if (num < 35) return "25-34";
+    if (num < 45) return "35-44";
+    if (num < 55) return "45-54";
+    return "55+";
+  }
+
+  return normalized;
 };
 
 const toCanonicalGender = (value: string) => {
