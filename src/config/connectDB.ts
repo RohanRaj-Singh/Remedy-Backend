@@ -11,10 +11,12 @@ export async function connectDB(): Promise<void> {
     process.exit(1);
   }
 
+  const isAtlas = uri.includes("mongodb+srv") || uri.includes("mongodb.net");
+
   try {
     await mongoose.connect(uri, {
       family: 4,
-      tls: true,
+      tls: isAtlas,
       serverSelectionTimeoutMS:
         Number(process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS) ||
         DEFAULT_SERVER_SELECTION_TIMEOUT_MS,
