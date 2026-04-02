@@ -147,10 +147,23 @@ const startSurvey = async (payload: TUser) => {
     gender: toCanonicalGender(payload.gender as unknown as string),
   } as unknown as TUser;
 
-  const availableDepartments =
-    streamLocationMapping[normalizedPayload.stream]?.[normalizedPayload.location]?.[
-      normalizedPayload.function
-    ] || [];
+  const locationMap =
+    streamLocationMapping[normalizedPayload.stream]?.[normalizedPayload.location];
+
+  let availableDepartments =
+    locationMap?.[normalizedPayload.function] || [];
+
+  // If exact function key doesn't contain the department,
+  // search all functions under the same stream+location for a match.
+  if (!availableDepartments.includes(normalizedPayload.department) && locationMap) {
+    for (const [funcKey, depts] of Object.entries(locationMap)) {
+      if (depts.includes(normalizedPayload.department)) {
+        (normalizedPayload as any).function = funcKey;
+        availableDepartments = depts;
+        break;
+      }
+    }
+  }
 
   if (!availableDepartments.includes(normalizedPayload.department)) {
     throw new AppError(
