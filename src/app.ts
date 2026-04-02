@@ -21,6 +21,8 @@ app.use(
       "http://localhost:3002",
       "https://remedy-sd.vercel.app",
       "https://remedygcc.com",
+      "https://oqep.remedygcc.com",
+      "https://api.remedygcc.com",
     ],
   })
 );
