@@ -590,13 +590,17 @@ const markInviteCompleted = async (payload: {
 }) => {
   const invite = await validateScannerToken(payload.token);
 
+  // Set completed and clear lastSurveyId to ensure full anonymization
+  // (no link from invite record back to survey response)
   await EmployeeInviteModel.updateOne(
     { _id: invite._id },
     {
       $set: {
         completed: true,
         completedAt: new Date(),
-        ...(payload.surveyId ? { lastSurveyId: new Types.ObjectId(payload.surveyId) } : {}),
+      },
+      $unset: {
+        lastSurveyId: 1,
       },
     }
   );
