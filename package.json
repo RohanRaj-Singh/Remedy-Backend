@@ -8,6 +8,8 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "start": "node ./dist/server.js",
+    "migrate:oqep:preview": "ts-node -r dotenv/config ./src/scripts/migrateOqepSchema.ts",
+    "migrate:oqep:run": "ts-node -r dotenv/config ./src/scripts/migrateOqepSchema.ts --execute",
     "seed:oqep:preview": "ts-node -r dotenv/config ./src/scripts/seedOqepData.ts",
     "seed:oqep:run": "ts-node -r dotenv/config ./src/scripts/seedOqepData.ts --execute",
     "maintenance:client-data:preview": "node -r dotenv/config ./dist/scripts/resetClientData.js",

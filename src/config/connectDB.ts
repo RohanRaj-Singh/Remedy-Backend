@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { getEnv } from "./env";
+import { buildMongoConnectOptions } from "./mongoOptions";
 
 let listenersRegistered = false;
 
@@ -14,13 +15,13 @@ export async function connectDB(): Promise<void> {
 
   try {
     await mongoose.connect(env.dbUrl, {
-      family: 4,
-      tls: true,
-      serverSelectionTimeoutMS: env.mongoServerSelectionTimeoutMs,
-      socketTimeoutMS: env.mongoSocketTimeoutMs,
-      maxPoolSize: env.mongoMaxPoolSize,
-      minPoolSize: env.mongoMinPoolSize,
-      retryWrites: true,
+      ...buildMongoConnectOptions(env.dbUrl, {
+        serverSelectionTimeoutMS: env.mongoServerSelectionTimeoutMs,
+        socketTimeoutMS: env.mongoSocketTimeoutMs,
+        maxPoolSize: env.mongoMaxPoolSize,
+        minPoolSize: env.mongoMinPoolSize,
+        tls: env.dbTls,
+      }),
     });
 
     if (!listenersRegistered) {

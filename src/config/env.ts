@@ -1,9 +1,11 @@
 import "dotenv/config";
+import { resolveMongoTls } from "./mongoOptions";
 
 export interface AppEnv {
   port: number;
   nodeEnv: string;
   dbUrl: string;
+  dbTls: boolean;
   jwtSecret: string;
   jwtExpiresIn: string;
   frontendUrl: string;
@@ -48,6 +50,7 @@ export function getEnv(): AppEnv {
   }
 
   const port = process.env.PORT?.trim() ? Number(process.env.PORT) : 5001;
+  const dbUrl = readRequiredEnv("DB_URL");
 
   if (!Number.isInteger(port) || port <= 0) {
     throw new Error("Environment variable PORT must be a positive integer.");
@@ -56,7 +59,8 @@ export function getEnv(): AppEnv {
   cachedEnv = {
     port,
     nodeEnv: process.env.NODE_ENV?.trim() || "development",
-    dbUrl: readRequiredEnv("DB_URL"),
+    dbUrl,
+    dbTls: resolveMongoTls(dbUrl),
     jwtSecret: readRequiredEnv("JWT_SECRET"),
     jwtExpiresIn: process.env.JWT_EXPIRES_IN?.trim() || "1d",
     frontendUrl: readRequiredEnv("FRONTEND_URL"),

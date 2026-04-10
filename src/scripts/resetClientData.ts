@@ -2,6 +2,7 @@ import "dotenv/config";
 import fs from "fs/promises";
 import path from "path";
 import mongoose from "mongoose";
+import { buildMongoConnectOptions } from "../config/mongoOptions";
 
 type CliOptions = {
   execute: boolean;
@@ -98,15 +99,7 @@ async function main(): Promise<void> {
     throw new Error("Missing required environment variable: DB_URL");
   }
 
-  await mongoose.connect(dbUrl, {
-    family: 4,
-    tls: true,
-    serverSelectionTimeoutMS: 15_000,
-    socketTimeoutMS: 45_000,
-    maxPoolSize: 5,
-    minPoolSize: 1,
-    retryWrites: true,
-  });
+  await mongoose.connect(dbUrl, buildMongoConnectOptions(dbUrl));
 
   const db = mongoose.connection.db;
 

@@ -5,6 +5,7 @@ import bcrypt from "bcrypt";
 import mongoose from "mongoose";
 import { User } from "../app/modules/user/user.schema";
 import { questionModel } from "../app/modules/question/question.model";
+import { buildMongoConnectOptions } from "../config/mongoOptions";
 
 type QuestionSeed = {
   id: string;
@@ -29,9 +30,9 @@ type SeedSummary = {
 };
 
 const ADMIN_SEED = {
-  name: "OQEP",
+  name: "Admin",
   email: "admin@remedy.com",
-  password: "123456",
+  password: "admin123",
   role: "admin",
 } as const;
 
@@ -164,15 +165,7 @@ async function main(): Promise<void> {
     throw new Error("Missing required environment variable: DB_URL");
   }
 
-  await mongoose.connect(dbUrl, {
-    family: 4,
-    tls: true,
-    serverSelectionTimeoutMS: 15_000,
-    socketTimeoutMS: 45_000,
-    maxPoolSize: 5,
-    minPoolSize: 1,
-    retryWrites: true,
-  });
+  await mongoose.connect(dbUrl, buildMongoConnectOptions(dbUrl));
 
   const summary: SeedSummary = {
     adminCreated: false,
