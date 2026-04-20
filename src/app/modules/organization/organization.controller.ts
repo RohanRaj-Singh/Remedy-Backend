@@ -14,6 +14,29 @@ const loginOrganization = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, { statusCode: status.OK, success: true, message: "Logged in successfully", data: result });
 });
 
+const loginEmailInvitationsAccess = catchAsync(async (req: Request, res: Response) => {
+  const result = await organizationService.loginEmailInvitationsAccess(req.body);
+  sendResponse(res, {
+    statusCode: status.OK,
+    success: true,
+    message: "Email invitations access granted",
+    data: result,
+  });
+});
+
+const changeEmailInvitationsPassword = catchAsync(async (req: Request, res: Response) => {
+  const result = await organizationService.changeEmailInvitationsPassword(
+    (req as any).loggedInUser._id,
+    req.body
+  );
+  sendResponse(res, {
+    statusCode: status.OK,
+    success: true,
+    message: "Email invitations password changed",
+    data: result,
+  });
+});
+
 const getAllOrganization = catchAsync(async (req: Request, res: Response) => {
   const result = await organizationService.getAllOrganizationFromDB(req.query);
   sendResponse(res, { statusCode: status.OK, success: true, message: "Fetched successfully", data: result });
@@ -35,5 +58,14 @@ const deleteOrganization = catchAsync(async (req: Request, res: Response) => {
 });
 
 
-export const organizationController = { postOrganization, getAllOrganization, getSingleOrganization, updateOrganization, deleteOrganization, loginOrganization };
+export const organizationController = {
+  postOrganization,
+  getAllOrganization,
+  getSingleOrganization,
+  updateOrganization,
+  deleteOrganization,
+  loginOrganization,
+  loginEmailInvitationsAccess,
+  changeEmailInvitationsPassword,
+};
     

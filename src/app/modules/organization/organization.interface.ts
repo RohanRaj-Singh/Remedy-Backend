@@ -5,6 +5,9 @@ export interface IOrganization {
   name: string;
   username: string;
   password?: string;
+  emailInvitationUsername?: string;
+  emailInvitationPassword?: string;
+  emailInvitationPasswordUpdatedAt?: Date;
   survayProvideLink:string
   organizationSurvaysLink:string
   isDelete?: boolean;

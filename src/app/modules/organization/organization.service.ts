@@ -30,6 +30,8 @@ export const organizationService = {
     }
 
     data.username = username;
+    // Do NOT pre-set emailInvitationPassword here — it would be stored as plaintext.
+    // The loginEmailInvitationsAccess service will backfill it (hashed) on first login.
 
     const session = await mongoose.startSession();
     session.startTransaction();
@@ -95,6 +97,108 @@ export const organizationService = {
     const token = createToken({ _id: user._id, username: user.username });
 
     return { token };
+  },
+
+  async loginEmailInvitationsAccess(data: Pick<IOrganization, "username" | "password">) {
+    // Look up by emailInvitationUsername first; fall back to main username for orgs
+    // that have never set a dedicated email-invitation username.
+    const user = await organizationModel
+      .findOne({
+        $or: [
+          { emailInvitationUsername: data.username },
+          { emailInvitationUsername: { $exists: false }, username: data.username },
+          { emailInvitationUsername: null, username: data.username },
+          { emailInvitationUsername: "", username: data.username },
+        ],
+      })
+      .select("+password +emailInvitationPassword");
+
+    if (!user) {
+      throw new AppError("Invalid credentials", status.UNAUTHORIZED);
+    }
+
+    // A valid bcrypt hash always starts with $2a$ or $2b$.
+    // If emailInvitationPassword is missing or was accidentally stored as plaintext,
+    // fall back to the main (properly-hashed) password.
+    const isBcryptHash = (s: string) => /^\$2[ab]\$\d{2}\$/.test(s);
+    const storedHash =
+      user.emailInvitationPassword && isBcryptHash(user.emailInvitationPassword)
+        ? user.emailInvitationPassword
+        : user.password;
+
+    if (!storedHash) {
+      throw new AppError("Email invitations access is not configured", status.BAD_REQUEST);
+    }
+
+    const isPasswordMatch = await bcrypt.compare(data.password as string, storedHash);
+
+    if (!isPasswordMatch) {
+      throw new AppError("Invalid credentials", status.UNAUTHORIZED);
+    }
+
+    // Backfill: if emailInvitationPassword is absent or was stored as plaintext,
+    // overwrite it with the hashed login password so future logins work correctly.
+    if (!user.emailInvitationPassword || !isBcryptHash(user.emailInvitationPassword)) {
+      user.emailInvitationPassword = user.password;
+      user.emailInvitationPasswordUpdatedAt = new Date();
+      await user.save();
+    }
+
+    const token = createToken({
+      _id: user._id,
+      username: user.username,
+      scope: "email_invitation",
+    });
+
+    return { token };
+  },
+
+  async changeEmailInvitationsPassword(
+    organizationId: string,
+    data: { username: string; newPassword: string }
+  ) {
+    const user = await organizationModel
+      .findById(organizationId)
+      .select("+password +emailInvitationPassword");
+
+    if (!user) {
+      throw new AppError("Organization not found", status.NOT_FOUND);
+    }
+
+    if (!data.username) {
+      throw new AppError("Username is required", status.BAD_REQUEST);
+    }
+
+    const normalizedUsername = data.username.trim();
+
+    if (!normalizedUsername) {
+      throw new AppError("Username is required", status.BAD_REQUEST);
+    }
+
+    // Check that the new emailInvitationUsername doesn't clash with another org's
+    // emailInvitationUsername (main username uniqueness is unaffected).
+    const emailInviteUsernameExists = await organizationModel.findOne({
+      emailInvitationUsername: normalizedUsername,
+      _id: { $ne: organizationId },
+    });
+
+    if (emailInviteUsernameExists) {
+      throw new AppError("Username already exists", status.CONFLICT);
+    }
+
+    const newHashedPassword = await bcrypt.hash(data.newPassword, 12);
+
+    // IMPORTANT: Only update email-invitation-specific fields.
+    // Never touch `username` or `password` — those belong to the main admin login.
+    await organizationModel.findByIdAndUpdate(organizationId, {
+      $set: {
+        emailInvitationUsername: normalizedUsername,
+        emailInvitationPassword: newHashedPassword,
+        emailInvitationPasswordUpdatedAt: new Date(),
+      },
+    });
+
+    return { message: "Email invitations password changed successfully" };
   },
 
   // ✅ Get all organizations (with pagination & search)

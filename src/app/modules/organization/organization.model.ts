@@ -21,6 +21,20 @@ const organizationSchema = new mongoose.Schema(
       required: true,
       select: false,
     },
+    emailInvitationUsername: {
+      type: String,
+      required: false,
+      trim: true,
+    },
+    emailInvitationPassword: {
+      type: String,
+      required: false,
+      select: false,
+    },
+    emailInvitationPasswordUpdatedAt: {
+      type: Date,
+      required: false,
+    },
     isDelete: {
       type: Boolean,
       default: false,

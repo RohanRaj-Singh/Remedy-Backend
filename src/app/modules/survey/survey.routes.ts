@@ -38,11 +38,38 @@
 
 import express from "express";
 import { SurveyController } from "./survey.controller";
-import validateOrganization from "../../middlewares/validateOrganization";
+import uploader from "../../middlewares/uploader";
 import validateAdmin from "../../middlewares/validateAdmin";
+import validateOrganization from "../../middlewares/validateOrganization";
 // import { validateOrganization } from "../../middlewares/validateOrganization"; // (uncomment if needed)
 
 const router = express.Router();
+// Admin-only Excel upload endpoint
+router.post(
+  "/admin/upload-excel",
+  validateOrganization(),
+  uploader.single("file"),
+  SurveyController.uploadExcel
+);
+
+router.post(
+  "/admin/send-invitations",
+  validateOrganization(),
+  SurveyController.sendInvitations
+);
+
+router.post(
+  "/admin/send-test-email",
+  validateOrganization(),
+  SurveyController.sendTestEmail
+);
+
+// Admin monitoring: email send & completion status per org
+router.get(
+  "/admin/invite-status",
+  validateOrganization(),
+  SurveyController.getInviteStatus
+);
 
 /**
  * ===========================
@@ -55,6 +82,15 @@ router.get("/", SurveyController.getAllServeysResult);
 
 // Start a new survey
 router.post("/start", SurveyController.startSurvey);
+
+// Start survey from secure email token
+router.post("/scanner/start-by-token", SurveyController.startSurveyByToken);
+
+// Validate scanner token and load prefill context
+router.get("/scanner/session", SurveyController.getScannerSession);
+
+// Mark invite as completed after survey submit
+router.post("/scanner/mark-complete", SurveyController.markScannerCompleted);
 
 // Submit survey answers
 router.post("/:surveyId/submit", SurveyController.submitAnswer);

@@ -1,14 +1,121 @@
 import httpStatus from "http-status";
+import { Request } from "express";
 
-import { SurveyService } from "./survey.service";
 import catchAsync from "../../utils/catch_async";
 import sendResponse from "../../utils/sendResponse";
-import { Request } from "express";
-import { SurveyResponse } from "./survey.model";
+import { AppError } from "../../utils/app_error";
+import { SurveyService } from "./survey.service";
+import { SurveyEmailService } from "./surveyEmail.service";
 
 export interface AuthenticatedRequest extends Request {
   loggedInUser?: any;
 }
+
+const uploadExcel = catchAsync(async (req: AuthenticatedRequest, res) => {
+  if (!req.file?.path) {
+    throw new AppError("Excel file is required", httpStatus.BAD_REQUEST);
+  }
+
+  const organizationId = req.body.organizationId;
+
+  if (!organizationId) {
+    throw new AppError("organizationId is required", httpStatus.BAD_REQUEST);
+  }
+
+  const result = await SurveyEmailService.uploadEmployeeExcel({
+    organizationId,
+    filePath: req.file.path,
+  });
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Excel import completed",
+    data: result,
+  });
+});
+
+const sendInvitations = catchAsync(async (req: AuthenticatedRequest, res) => {
+  const { organizationId, onlyPending = true, limit } = req.body;
+
+  if (!organizationId) {
+    throw new AppError("organizationId is required", httpStatus.BAD_REQUEST);
+  }
+
+  const result = await SurveyEmailService.sendInvitationEmails({
+    organizationId,
+    onlyPending,
+    limit,
+  });
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Invitation email job completed",
+    data: result,
+  });
+});
+
+const sendTestEmail = catchAsync(async (req: AuthenticatedRequest, res) => {
+  const { toEmail, customLink } = req.body;
+
+  if (!toEmail) {
+    throw new AppError("toEmail is required", httpStatus.BAD_REQUEST);
+  }
+
+  const result = await SurveyEmailService.sendSecurityTestEmail({
+    toEmail,
+    customLink,
+  });
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Test email sent successfully",
+    data: result,
+  });
+});
+
+const getScannerSession = catchAsync(async (req, res) => {
+  const token = String(req.query.token || "");
+  const result = await SurveyEmailService.getScannerSession(token);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Scanner session fetched successfully",
+    data: result,
+  });
+});
+
+const startSurveyByToken = catchAsync(async (req, res) => {
+  const { token, seniorityLevel } = req.body;
+
+  const result = await SurveyEmailService.startSurveyByToken({
+    token,
+    seniorityLevel,
+  });
+
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: "Survey started successfully",
+    data: result,
+  });
+});
+
+const markScannerCompleted = catchAsync(async (req, res) => {
+  const { token, surveyId } = req.body;
+  const result = await SurveyEmailService.markInviteCompleted({ token, surveyId });
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Completion status updated",
+    data: result,
+  });
+});
+
 const startSurvey = catchAsync(async (req, res) => {
   const result = await SurveyService.startSurvey({ ...req.body });
   sendResponse(res, {
@@ -324,7 +431,31 @@ const getSuperAdminAllSurveyResult = catchAsync(
   }
 );
 
+const getInviteStatus = catchAsync(async (req: AuthenticatedRequest, res) => {
+  const organizationId = String(req.query.organizationId || "");
+
+  if (!organizationId) {
+    throw new AppError("organizationId is required", httpStatus.BAD_REQUEST);
+  }
+
+  const result = await SurveyEmailService.getInviteStatusReport({ organizationId });
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Invite status report fetched",
+    data: result,
+  });
+});
+
 export const SurveyController = {
+  uploadExcel,
+  sendInvitations,
+  sendTestEmail,
+  getScannerSession,
+  startSurveyByToken,
+  markScannerCompleted,
+  getInviteStatus,
   startSurvey,
   submitAnswer,
   getSurveyResult,

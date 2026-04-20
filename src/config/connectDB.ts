@@ -1,45 +1,47 @@
 import mongoose from "mongoose";
-import { getEnv } from "./env";
-import { buildMongoConnectOptions } from "./mongoOptions";
 
-let listenersRegistered = false;
+const DEFAULT_SERVER_SELECTION_TIMEOUT_MS = 15_000;
+const DEFAULT_SOCKET_TIMEOUT_MS = 45_000;
 
 export async function connectDB(): Promise<void> {
-  const env = getEnv();
+  const uri = process.env.DB_URL;
 
-  const readyState = mongoose.connection.readyState;
-  // 1 = connected, 2 = connecting
-  if (readyState === 1 || readyState === 2) {
-    return;
+  if (!uri) {
+    console.error("[MongoDB] DB_URL is not set in environment variables.");
+    process.exit(1);
   }
 
+  const isAtlas = uri.includes("mongodb+srv") || uri.includes("mongodb.net");
+
   try {
-    await mongoose.connect(env.dbUrl, {
-      ...buildMongoConnectOptions(env.dbUrl, {
-        serverSelectionTimeoutMS: env.mongoServerSelectionTimeoutMs,
-        socketTimeoutMS: env.mongoSocketTimeoutMs,
-        maxPoolSize: env.mongoMaxPoolSize,
-        minPoolSize: env.mongoMinPoolSize,
-        tls: env.dbTls,
-      }),
+    await mongoose.connect(uri, {
+      family: 4,
+      tls: isAtlas,
+      serverSelectionTimeoutMS:
+        Number(process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS) ||
+        DEFAULT_SERVER_SELECTION_TIMEOUT_MS,
+      socketTimeoutMS:
+        Number(process.env.MONGO_SOCKET_TIMEOUT_MS) ||
+        DEFAULT_SOCKET_TIMEOUT_MS,
+      maxPoolSize: Number(process.env.MONGO_MAX_POOL_SIZE) || 20,
+      minPoolSize: Number(process.env.MONGO_MIN_POOL_SIZE) || 2,
+      retryWrites: true,
     });
 
-    if (!listenersRegistered) {
-      const conn = mongoose.connection;
+    console.log("[MongoDB] Connected successfully.");
 
-      conn.on("error", (err) => {
-        console.error("[DB] Connection error:", err);
-      });
-      conn.on("disconnected", () => {
-        console.warn("[DB] Disconnected.");
-      });
-      conn.on("reconnected", () => {
-        console.log("DB connected");
-      });
-
-      listenersRegistered = true;
-    }
+    const conn = mongoose.connection;
+    conn.on("error", (err) => {
+      console.error("[MongoDB] Connection error:", err);
+    });
+    conn.on("disconnected", () => {
+      console.warn("[MongoDB] Disconnected.");
+    });
+    conn.on("reconnected", () => {
+      console.log("[MongoDB] Reconnected.");
+    });
   } catch (error) {
-    throw error;
+    console.error("[MongoDB] Connection failed:", error);
+    process.exit(1);
   }
 }

@@ -67,6 +67,59 @@ const toCanonicalLabel = (value: string) => {
     .replace(/ /g, "_");
 };
 
+const toCanonicalLocation = (value: string) => {
+  const normalized = String(value || "").trim().toLowerCase();
+
+  if (["muscat", "head office", "headoffice", "head_office", "headoffice"].includes(normalized)) {
+    return "headOffice";
+  }
+
+  if (["b60", "block 60", "block60"].includes(normalized)) {
+    return "block60";
+  }
+
+  if (["musandam", "msusundam", "musundam"].includes(normalized)) {
+    return "msusundam";
+  }
+
+  return value;
+};
+
+const toCanonicalAge = (value: string) => {
+  const normalized = String(value || "").trim();
+  const aliases: Record<string, string> = {
+    "18-25": "18-24",
+    "18-24": "18-24",
+    "25-34": "25-34",
+    "35-44": "35-44",
+    "44-54": "45-54",
+    "45-54": "45-54",
+    "55+": "55+",
+  };
+
+  if (aliases[normalized]) return aliases[normalized];
+
+  // Handle raw numeric age (e.g. "30") → map to correct range
+  const num = parseInt(normalized, 10);
+  if (!isNaN(num)) {
+    if (num < 25) return "18-24";
+    if (num < 35) return "25-34";
+    if (num < 45) return "35-44";
+    if (num < 55) return "45-54";
+    return "55+";
+  }
+
+  return normalized;
+};
+
+const toCanonicalGender = (value: string) => {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "male" || normalized === "female" || normalized === "other") {
+    return normalized;
+  }
+  return value;
+};
+
 const locationAliases: Record<string, string[]> = {
   headOffice: ["Muscat", "muscat", "Head Office", "head office"],
   block60: ["B60", "b60", "Block 60", "block 60"],
@@ -96,13 +149,35 @@ const buildFieldFilter = (field: string, value?: string) => {
 };
 
 const startSurvey = async (payload: TUser) => {
-  // console.log({ payload });
-  const availableDepartments =
-    streamLocationMapping[payload.stream]?.[payload.location]?.[
-      payload.function
-    ] || [];
+  const normalizedPayload = {
+    ...payload,
+    stream: toCanonicalLabel(payload.stream as unknown as string),
+    function: toCanonicalLabel(payload.function as unknown as string),
+    department: toCanonicalLabel(payload.department as unknown as string),
+    location: toCanonicalLocation(payload.location as unknown as string),
+    age: toCanonicalAge(payload.age as unknown as string),
+    gender: toCanonicalGender(payload.gender as unknown as string),
+  } as unknown as TUser;
 
-  if (!availableDepartments.includes(payload.department)) {
+  const locationMap =
+    streamLocationMapping[normalizedPayload.stream]?.[normalizedPayload.location];
+
+  let availableDepartments =
+    locationMap?.[normalizedPayload.function] || [];
+
+  // If exact function key doesn't contain the department,
+  // search all functions under the same stream+location for a match.
+  if (!availableDepartments.includes(normalizedPayload.department) && locationMap) {
+    for (const [funcKey, depts] of Object.entries(locationMap)) {
+      if (depts.includes(normalizedPayload.department)) {
+        (normalizedPayload as any).function = funcKey;
+        availableDepartments = depts;
+        break;
+      }
+    }
+  }
+
+  if (!availableDepartments.includes(normalizedPayload.department)) {
     throw new AppError(
       "Invalid stream/location/function/department combination",
       httpStatus.BAD_REQUEST
@@ -140,7 +215,7 @@ const startSurvey = async (payload: TUser) => {
 
   const surveyData = {
     organizationId: payload.organizationId,
-    user: payload,
+    user: normalizedPayload,
     questions: questions.map((q) => q._id),
     followUpQuestions: [],
     responses: [],
