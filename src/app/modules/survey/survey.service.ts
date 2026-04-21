@@ -737,19 +737,33 @@ const getOrganizationSurveyStats2 = async (
   };
 
   // ---------------------- FILTER ROLLUP ----------------------
-  while (true) {
+  // First check if we have explicit user filters
+  const hasExplicitFilters = Object.values(filters).some(v => v !== undefined && v !== "");
+  
+  // If user provided explicit filters, respect them - do NOT auto-remove
+  // Just query once with the user's filters (even if < 4 results)
+  // Rollup is only for when NO filters are explicitly provided
+  if (hasExplicitFilters) {
     const query = buildQuery(currentFilters);
     responses = await SurveyResponse.find(query).lean();
+    // Don't roll up when user explicitly filters - show results as-is
+    // Remove rollup flag since we're respecting user filters
+  } else {
+    // Original rollup logic for when no filters provided
+    while (true) {
+      const query = buildQuery(currentFilters);
+      responses = await SurveyResponse.find(query).lean();
 
-    if (responses.length >= 4) break;
-    if (priorityOrder.length === 0) break;
+      if (responses.length >= 4) break;
+      if (priorityOrder.length === 0) break;
 
-    rollUp = true;
+      rollUp = true;
 
-    const toRemove = priorityOrder.shift()!;
-    if (currentFilters[toRemove] !== undefined) {
-      removedFilters.push(toRemove);
-      delete currentFilters[toRemove];
+      const toRemove = priorityOrder.shift()!;
+      if (currentFilters[toRemove] !== undefined) {
+        removedFilters.push(toRemove);
+        delete currentFilters[toRemove];
+      }
     }
   }
 
@@ -1518,28 +1532,43 @@ const getSubdomainSeats2 = async (
   };
 
   // ------------------- EXACT SAME ROLLUP LOOP -------------------
-  while (true) {
+  // First check if we have explicit user filters
+  const hasExplicitFilters = Object.values(filters).some(v => v !== undefined && v !== "");
+  
+  // If user provided explicit filters, respect them - do NOT auto-remove
+  if (hasExplicitFilters) {
     const query = buildQueryFromFilters(currentFilters);
-
     const responses = await SurveyResponse.find(query)
       .populate("responses.question")
       .select("user responses")
       .lean();
-
     finalResponses = responses;
     finalQueryUsed = query;
+  } else {
+    // Original rollup logic for when no filters provided
+    while (true) {
+      const query = buildQueryFromFilters(currentFilters);
 
-    if (responses.length >= 4) break;
+      const responses = await SurveyResponse.find(query)
+        .populate("responses.question")
+        .select("user responses")
+        .lean();
 
-    const next = removalOrder.find(
-      (key) => currentFilters[key] !== undefined && currentFilters[key] !== null
-    );
+      finalResponses = responses;
+      finalQueryUsed = query;
 
-    if (!next) break;
+      if (responses.length >= 4) break;
 
-    removedFilters.push(next as string);
-    delete currentFilters[next];
-    rollUp = true;
+      const next = removalOrder.find(
+        (key) => currentFilters[key] !== undefined && currentFilters[key] !== null
+      );
+
+      if (!next) break;
+
+      removedFilters.push(next as string);
+      delete currentFilters[next];
+      rollUp = true;
+    }
   }
 
   const totalParticipants = finalResponses.length;
@@ -1773,28 +1802,43 @@ const getDomainWiseMetrics = async (
   };
 
   // ------------------------------ FILTER ROLLUP ------------------------------
-  while (true) {
+  // First check if we have explicit user filters
+  const hasExplicitFilters = Object.values(filters).some(v => v !== undefined && v !== "");
+  
+  // If user provided explicit filters, respect them - do NOT auto-remove
+  if (hasExplicitFilters) {
     const query = buildQueryFromFilters(currentFilters);
-
     const responses = await SurveyResponse.find(query)
       .populate("responses.question")
       .select("user responses")
       .lean();
-
     finalResponses = responses;
     finalQueryUsed = query;
+  } else {
+    // Original rollup logic for when no filters provided
+    while (true) {
+      const query = buildQueryFromFilters(currentFilters);
 
-    if (responses.length >= 4) break; // minimum sample reached
+      const responses = await SurveyResponse.find(query)
+        .populate("responses.question")
+        .select("user responses")
+        .lean();
 
-    const nextToRemove = removalOrder.find(
-      (key) => currentFilters[key] !== undefined && currentFilters[key] !== null
-    );
+      finalResponses = responses;
+      finalQueryUsed = query;
 
-    if (!nextToRemove) break;
+      if (responses.length >= 4) break; // minimum sample reached
 
-    removedFilters.push(nextToRemove as string);
-    delete currentFilters[nextToRemove];
-    rollUp = true;
+      const nextToRemove = removalOrder.find(
+        (key) => currentFilters[key] !== undefined && currentFilters[key] !== null
+      );
+
+      if (!nextToRemove) break;
+
+      removedFilters.push(nextToRemove as string);
+      delete currentFilters[nextToRemove];
+      rollUp = true;
+    }
   }
 
   const totalParticipants = finalResponses.length;
@@ -1957,19 +2001,29 @@ const getSuperAdminServaySeats = async (
     return andClauses.length > 1 ? { $and: andClauses } : andClauses[0];
   };
 
-  while (true) {
+  // First check if we have explicit user filters
+  const hasExplicitFilters = Object.values(filters).some(v => v !== undefined && v !== "");
+  
+  // If user provided explicit filters, respect them - do NOT auto-remove
+  if (hasExplicitFilters) {
     const query = buildQuery(currentFilters);
     responses = await SurveyResponse.find(query).lean();
+  } else {
+    // Original rollup logic for when no filters provided
+    while (true) {
+      const query = buildQuery(currentFilters);
+      responses = await SurveyResponse.find(query).lean();
 
-    if (responses.length >= 4) break;
-    if (priorityOrder.length === 0) break;
+      if (responses.length >= 4) break;
+      if (priorityOrder.length === 0) break;
 
-    rollUp = true;
+      rollUp = true;
 
-    const toRemove = priorityOrder.shift()!;
-    if (currentFilters[toRemove] !== undefined) {
-      removedFilters.push(toRemove);
-      delete currentFilters[toRemove];
+      const toRemove = priorityOrder.shift()!;
+      if (currentFilters[toRemove] !== undefined) {
+        removedFilters.push(toRemove);
+        delete currentFilters[toRemove];
+      }
     }
   }
 
@@ -2313,30 +2367,45 @@ const getAllDomainMetrics = async (
     return q;
   };
 
-  while (true) {
+  // First check if we have explicit user filters
+  const hasExplicitFilters = Object.values(filters).some(v => v !== undefined && v !== "");
+  
+  // If user provided explicit filters, respect them - do NOT auto-remove
+  if (hasExplicitFilters) {
     const query = buildQueryFromFilters(currentFilters);
-
     const responses = await SurveyResponse.find(query)
       .populate("responses.question")
       .select("user responses")
       .lean();
-
-    const count = responses.length;
-
     finalResponses = responses;
     finalQueryUsed = query;
+  } else {
+    // Original rollup logic for when no filters provided
+    while (true) {
+      const query = buildQueryFromFilters(currentFilters);
 
-    if (count >= 4) break;
+      const responses = await SurveyResponse.find(query)
+        .populate("responses.question")
+        .select("user responses")
+        .lean();
 
-    const nextToRemove = removalOrder.find(
-      (key) => currentFilters[key] !== undefined && currentFilters[key] !== null
-    );
-    if (!nextToRemove) break;
+      const count = responses.length;
 
-    removedFilters.push(nextToRemove as string);
+      finalResponses = responses;
+      finalQueryUsed = query;
 
-    delete currentFilters[nextToRemove];
-    rollUp = true;
+      if (count >= 4) break;
+
+      const nextToRemove = removalOrder.find(
+        (key) => currentFilters[key] !== undefined && currentFilters[key] !== null
+      );
+      if (!nextToRemove) break;
+
+      removedFilters.push(nextToRemove as string);
+
+      delete currentFilters[nextToRemove];
+      rollUp = true;
+    }
   }
 
   const totalParticipants = finalResponses.length;
@@ -2483,27 +2552,42 @@ const getSuperAdminSubdomainSeats = async (
   };
 
   // --- Roll-up loop ---
-  while (true) {
+  // First check if we have explicit user filters
+  const hasExplicitFilters = Object.values(filters).some(v => v !== undefined && v !== "");
+  
+  // If user provided explicit filters, respect them - do NOT auto-remove
+  if (hasExplicitFilters) {
     const query = buildQueryFromFilters(currentFilters);
-
     const responses = await SurveyResponse.find(query)
       .populate("responses.question")
       .select("user responses")
       .lean();
-
     finalResponses = responses;
     finalQueryUsed = query;
+  } else {
+    // Original rollup logic for when no filters provided
+    while (true) {
+      const query = buildQueryFromFilters(currentFilters);
 
-    if (responses.length >= 4) break;
+      const responses = await SurveyResponse.find(query)
+        .populate("responses.question")
+        .select("user responses")
+        .lean();
 
-    const nextToRemove = removalOrder.find(
-      (key) => currentFilters[key] !== undefined
-    );
-    if (!nextToRemove) break;
+      finalResponses = responses;
+      finalQueryUsed = query;
 
-    removedFilters.push(nextToRemove as string);
-    delete currentFilters[nextToRemove];
-    rollUp = true;
+      if (responses.length >= 4) break;
+
+      const nextToRemove = removalOrder.find(
+        (key) => currentFilters[key] !== undefined
+      );
+      if (!nextToRemove) break;
+
+      removedFilters.push(nextToRemove as string);
+      delete currentFilters[nextToRemove];
+      rollUp = true;
+    }
   }
 
   const totalParticipants = finalResponses.length;
