@@ -19,11 +19,12 @@ function generateInviteToken() {
 function buildEmailHtml(inviteLink) {
   return `
     <div style="font-family: Arial, sans-serif; line-height: 1.8; color: #111827; max-width: 620px; margin: 0 auto; padding: 32px 24px;">
-      <p>Dear Colleague,</p>
-      <p>At OQEP, we are committed to continuous improvement and value your honest feedback. We are pleased to invite you to participate in our <strong>Employee Engagement Survey</strong>.</p>
-      <p>Your insights are vital in helping us shape a better workplace and enhance our operational excellence.</p>
-      <p style="margin-top: 24px;"><strong>How to Participate:</strong><br>
-      Please click your secure, individualized link below to begin:</p>
+      <p>Dear Employee,</p>
+      <p>Welcome to the OQEP Mental Wellbeing Survey 2026.</p>
+      <p>This survey aims to understand the current mental wellbeing and workplace experience of OQEP employees. Your feedback is important and will help us shape future wellbeing initiatives and strengthen OQEP's culture of "We Care."</p>
+      <p>Please complete the questionnaire based on your own experiences and impressions as an employee at OQEP. There are no right or wrong answers; we simply ask that you respond honestly.</p>
+      <p style="margin-top: 24px;"><strong>Start the survey:</strong><br>
+      Please use your secure link below:</p>
       <p style="margin: 24px 0;">
         <a href="${inviteLink}" style="display:inline-block;padding:12px 24px;background:#0f766e;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:15px;">
           Start Your Survey
@@ -32,15 +33,10 @@ function buildEmailHtml(inviteLink) {
       <p style="font-size: 13px; color: #6b7280; word-break: break-all;">
         If the button does not work, copy and paste this link into your browser:<br>${inviteLink}
       </p>
-      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 28px 0;" />
-      <p style="margin-bottom: 8px;"><strong>Important Information:</strong></p>
-      <ul style="padding-left: 20px; line-height: 2;">
-        <li><strong>Anonymity:</strong> Your responses are strictly confidential.</li>
-        <li><strong>Personalized Link:</strong> This link is unique to you. Please do not forward this email.</li>
-        <li><strong>Pre-filled Data:</strong> Your department and location details are already integrated.</li>
-      </ul>
-      <p style="margin-top: 24px;">Thank you for your time and for contributing to the future of OQEP.</p>
-      <p style="margin-top: 32px;">Best regards,<br/><strong>In collaboration with Remedy</strong></p>
+      <p>The survey is a joint initiative between the Culture Team and the Occupational Health Team as part of the TAZZIZ 2026 program.</p>
+      <p>Your privacy and confidentiality are very important to us. The OQEP Mental Wellbeing Survey is being conducted by the third-party consultancy company Remedy on behalf of OQEP. All responses will remain strictly confidential and will be processed in accordance with applicable data protection requirements and the OQEP Code of Conduct. OQEP will act as the data controller, and no individual responses will be shared with management.</p>
+      <p>Thank you for taking the time to share your feedback and support OQEP's journey toward a healthier, more supportive workplace.</p>
+      <p style="margin-top: 32px;">Regards,</p>
     </div>
   `;
 }
@@ -61,7 +57,7 @@ async function main() {
       await sgMail.send({
         to: invite.email,
         from: EMAIL_FROM,
-        subject: "OQEP Employee Engagement Survey Invitation",
+        subject: "OQEP Mental Wellbeing Survey 2026 Invitation",
         html: buildEmailHtml(inviteLink),
       });
 
