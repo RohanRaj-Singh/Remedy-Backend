@@ -161,21 +161,18 @@ const userSchema = new Schema<TUser>(
 
     stream: {
       type: String,
-      enum: streamEnum,
       required: true,
       trim: true,
     },
 
     function: {
       type: String,
-      enum: functionEnum,
       required: true,
       trim: true,
     },
 
     department: {
       type: String,
-      enum: departmentEnum,
       required: true,
       trim: true,
     },
@@ -205,7 +202,6 @@ const userSchema = new Schema<TUser>(
 
     location: {
       type: String,
-      enum: locationEnum,
       required: true,
       lowercase: true,
       trim: true,

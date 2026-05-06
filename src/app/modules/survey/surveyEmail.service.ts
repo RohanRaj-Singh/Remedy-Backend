@@ -613,7 +613,7 @@ const startSurveyByToken = async (payload: {
     age: invite.age as any,
     gender: invite.gender,
     seniorityLevel: resolvedSeniority,
-  });
+  }, { skipMappingValidation: true });
 
   await EmployeeInviteModel.updateOne(
     { _id: invite._id },
