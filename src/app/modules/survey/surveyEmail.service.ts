@@ -673,7 +673,7 @@ const sendInvitationEmails = async (payload: {
 
   const invites = await EmployeeInviteModel.find(filter)
     .sort({ createdAt: 1 })
-    .limit(payload.limit || 200);
+    .limit(payload.limit || 1000);
 
   const report = {
     totalSelected: invites.length,
