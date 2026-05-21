@@ -236,7 +236,8 @@ const parseExcelRows = (filePath: string): TImportRow[] => {
   return rawRows.map((row) => {
     const normalizedRow: Record<string, string> = {};
 
-    Object.entries(row).forEach(([key, value]) => {
+    Object.keys(row).forEach((key) => {
+      const value = row[key];
       const normalizedKey = normalizeHeader(key);
       const canonicalKey = HEADER_ALIASES[normalizedKey] ?? normalizedKey;
       // Keep both the canonical and the raw normalized key so both lookups work
@@ -665,6 +666,7 @@ const sendInvitationEmails = async (payload: {
 
   const filter: Record<string, unknown> = {
     organizationId: payload.organizationId,
+    completed: { $ne: true },
   };
 
   if (payload.onlyPending !== false) {
@@ -673,7 +675,7 @@ const sendInvitationEmails = async (payload: {
 
   const invites = await EmployeeInviteModel.find(filter)
     .sort({ createdAt: 1 })
-    .limit(payload.limit || 1000);
+    .limit(payload.limit || 200);
 
   const report = {
     totalSelected: invites.length,
